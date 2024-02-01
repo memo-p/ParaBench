@@ -16,11 +16,12 @@
  */
 
 #include <iostream>
+#include <deque>
 #include <string>
+#include <thread>
 
 #include "ChronoP.hpp"
 #include "gen.hpp"
-#include "threadpool.hpp"
 
 
 
@@ -39,7 +40,7 @@ PARALLELMACRO(para_sub_1, x++);
 PARALLELMACRO(para_sub_2, *x++);
 PARALLELMACRO(para_sub_3, *x++ += 1);
 PARALLELMACRO(para_sub_3_2, *x++ += 1;*y++ += 1;local_var++);
-PARALLELMACRO(para_sub_4, *x++ = *y++);
+PARALLELMACRO(para_sub_4, *x++ += *y++);
 PARALLELMACRO(para_sub_5, local_var += *y++);
 PARALLELMACRO(para_sub_6, local_var++);
 PARALLELMACRO(para_sub_7, local_var = std::max(local_var,*y++));
@@ -51,30 +52,28 @@ PARALLELMACRO(para_sub_10, *x *= *x++);
 
 
 inline void ParallelF(double *y, double *x, const int size, int nb_workers,
-                      ThreadPool &tp,
                       int (&f)(double *y, double *x, int size, int start,
                                int end)) {
   int work_slice = size / nb_workers;
-  std::vector<std::shared_future<int>> jobs;
+  std::deque<std::thread> threads;
   for (size_t w = 0; w < nb_workers; w++) {
     int end = (w + 1) * work_slice;
     if (w == nb_workers - 1) {
       end = size;
     }
-    jobs.emplace_back(tp.enqueue(f, y + w * work_slice, x + w * work_slice,
-                                 size, w * work_slice, end));
+    threads.emplace_back(f, y + w * work_slice, x + w * work_slice,
+                                 size, w * work_slice, end);
   }
-  for (auto &&job : jobs) {
-    job.get();
+
+  for (auto &&t : threads) {
+    t.join();
   }
-  jobs.clear();
 }
 
 int main(int argc, char **argv) {
   int nb_worker_max = 12;
   int iterations = 5;
   std::string delimiter = "#";
-  ThreadPool tp(nb_worker_max);
   ChronoP TS;
 
   // sizes to test
@@ -101,7 +100,7 @@ int main(int argc, char **argv) {
   fct_names.push_back("*x++ += 1;*y++ += 1;local_var++");
 
   fcts.emplace_back(&para_sub_4);
-  fct_names.push_back("*x++ = *y++");
+  fct_names.push_back("*x++ += *y++");
 
   fcts.emplace_back(&para_sub_5);
   fct_names.push_back("local_var += *y++");
@@ -127,7 +126,7 @@ int main(int argc, char **argv) {
     auto code = fct_names[i];
     for (auto &&size : sizes) {
       // first entry is sequential.
-      // then, the sequntial processing of the smallest workload
+      // then, the sequential processing of the smallest workload
       // then, from second to last parallel implem starting at 1
       std::vector<std::vector<int>> times(1 + 1 + nb_worker_max);
       for (size_t repeat = 0; repeat < iterations; repeat++) {
@@ -151,7 +150,7 @@ int main(int argc, char **argv) {
         // Parallel call
         for (size_t i = 1; i < nb_worker_max + 1; i++) {
           TS.Start();
-          ParallelF(y, x, size, i, tp, *fct);
+          ParallelF(y, x, size, i, *fct);
           TS.Stop();
           times[1+i].push_back(TS.ellapsed_u_second());
         }
@@ -163,7 +162,7 @@ int main(int argc, char **argv) {
       for (auto &&time : times) {
         auto p = MeanAndStdev(time);
         std::cout << p.first << delimiter << p.second << delimiter;
-        // std::cout << p.first << ";";
+        // std::cout << p.first << ", ";
       }
       std::cout << "\n";
     }

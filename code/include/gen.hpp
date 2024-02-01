@@ -21,6 +21,7 @@
 #define PROJCODE_INCLUDE_GEN_HPP
 
 #include <limits>
+#include <vector>
 #include <random>
 
 
@@ -30,6 +31,13 @@ inline void FillRandMatrix(double* mt, const int nrows, const int ncols) {
       std::size_t id = i * ncols + j;
       mt[id] = ((double)rand()) / std::numeric_limits<int>::max();
     }
+  }
+}
+
+template<typename T>
+inline void FillRandVector(std::vector<T> y) {
+  for (std::size_t i = 0; i < y.size(); i++) {
+      y[i] = ((double)rand()) / std::numeric_limits<int>::max();
   }
 }
 

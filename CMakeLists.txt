@@ -12,3 +12,17 @@ target_include_directories(${APPLICATION_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR
 target_link_libraries(${APPLICATION_NAME} pthread)
 target_compile_options(${APPLICATION_NAME} PRIVATE ${CXX_FLAGS_REQUIRED})
 target_compile_features(${APPLICATION_NAME} PRIVATE cxx_std_17)
+
+set(APPLICATION_NAME "benchAtom")
+add_executable(${APPLICATION_NAME} code/benchAtom.cpp)
+target_include_directories(${APPLICATION_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/include)
+target_link_libraries(${APPLICATION_NAME} pthread)
+target_compile_options(${APPLICATION_NAME} PRIVATE ${CXX_FLAGS_REQUIRED})
+target_compile_features(${APPLICATION_NAME} PRIVATE cxx_std_17)
+
+set(APPLICATION_NAME "benchVector")
+add_executable(${APPLICATION_NAME} code/benchVector.cpp)
+target_include_directories(${APPLICATION_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/include)
+target_link_libraries(${APPLICATION_NAME} pthread)
+target_compile_options(${APPLICATION_NAME} PRIVATE ${CXX_FLAGS_REQUIRED})
+target_compile_features(${APPLICATION_NAME} PRIVATE cxx_std_17)
